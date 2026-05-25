@@ -38,6 +38,34 @@
     colnames(effect_sdb) <- c("eff", "mean", "low", "high")
     effect_sdb <- abs(effect_sdb)
     
+    # Plot effect in English
+    df <- effect_sdb
+    df[, c("mean", "low", "high")] <- -df[, c("mean", "low", "high")]
+    plot <- ggplot(df, aes(x = eff, y = mean)) +
+      geom_line(colour = palette_gen[5], linewidth = 2) +
+      geom_ribbon(aes(ymin = low, ymax = high), alpha = 0.5, 
+        colour = palette_gen[5], fill = palette_gen[5]) +
+      theme_bw() +
+      scale_x_continuous("SDB effectiveness", labels = percent, 
+        expand = expansion(add = c(0, 0.02))) +
+      scale_y_continuous("reduction in the reproduction number")
+    ggsave(paste0(dir_path, "out/sdb_effect_en.png"), dpi = "print",
+      units = "cm", height = 10, width = 15 * hw)  
+
+    # Plot effect in French
+    df <- effect_sdb
+    df[, c("mean", "low", "high")] <- -df[, c("mean", "low", "high")]
+    plot <- ggplot(df, aes(x = eff, y = mean)) +
+      geom_line(colour = palette_gen[5], linewidth = 2) +
+      geom_ribbon(aes(ymin = low, ymax = high), alpha = 0.5, 
+        colour = palette_gen[5], fill = palette_gen[5]) +
+      theme_bw() +
+      scale_x_continuous("complétude de l'EDS (%)", labels = percent, 
+        expand = expansion(add = c(0, 0.02))) +
+      scale_y_continuous("réduction du nombre de reproduction")
+    ggsave(paste0(dir_path, "out/sdb_effect_fr.png"), dpi = "print",
+      units = "cm", height = 10, width = 15 * hw)  
+        
   #...................................       
   ## Set up scenarios
     

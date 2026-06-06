@@ -72,15 +72,15 @@
     # Safe and dignified burial (SDB) intervention scenarios    
     scenarios <- expand.grid(
       n_seeds = seq(1, 19, 2),
-      R0_I = seq(0.50, 1.50, 0.10),
-      R0_D = seq(0.40, 0.80, 0.10),
+      R_I = seq(0.50, 1.50, 0.10),
+      R_D = seq(0.80, 1.60, 0.10),
       cov = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), 
       eff = unique(effect_sdb$eff)
     )
     scenarios <- merge(scenarios, effect_sdb, by = "eff", all.x = T)    
     scenarios$id <- 1:nrow(scenarios)
-    scenarios$R0 <- paste0("R0 = ", scenarios$R0_I + scenarios$R0_D, " (", 
-      scenarios$R0_D, " due to burial)")
+    scenarios$Rn <- paste0("R = ", round(scenarios$R_I + pars["cfr"] * 
+      scenarios$R_D, digits = 1), " (R_D = ", scenarios$R_D, ")")
     
     
 #...............................................................................                           
@@ -92,30 +92,36 @@
     
     # SEIRD time step
     seird_step <- Csnippet("
-      double dN_SE = rbinom(S, 1 - exp(-(R0_I/infectious_period) * I/N)) + 
-        rbinom(S, 1 - exp(-((R0_D - (cov * eff))/burial_period) * D/N));
-      double dN_EI = rbinom(E, 1 - exp(-(1/incubation_period)));
-      double dN_IF = rbinom(I, 1 - exp(-(1/infectious_period)));
+      double dN_SE = rbinom(S, 1 - exp(-(R_I/T_I * I/N)) * 
+        exp(-(R_D/T_B * U/N)) * exp(-((R_D-delta_eff/cfr)/T_B * C/N)));
+      double dN_EI = rbinom(E, 1 - exp(-(1/T_E)));
+      double dN_IF = rbinom(I, 1 - exp(-(1/T_I)));
       double dN_FD = rbinom(dN_IF, cfr);
+      double dN_DC = rbinom(dN_FD, cov);
+      double dN_DU = dN_FD - dN_DC;
       double dN_FR = dN_IF - dN_FD;
-      double dN_DR = rbinom(D, 1 - exp(-(1/burial_period)));
-
+      double dN_CR = rbinom(C, 1 - exp(-(1/T_B)));
+      double dN_UR = rbinom(U, 1 - exp(-(1/T_B)));
+      
       S -= dN_SE;
       E += dN_SE - dN_EI;
       I += dN_EI - dN_IF;
-      D += dN_FD - dN_DR;
-      R += dN_FR + dN_DR;
+      F = 0;
+      C += dN_DC - dN_CR;
+      U += dN_DU - dN_UR;
+      R += dN_FR + dN_CR + dN_UR;
       cases += dN_EI;
     ")
 
     # Specify initial conditions    
     seird_init <- Csnippet("
       S = N - n_seeds;
-      E = round(n_seeds * 
-        incubation_period / (incubation_period + infectious_period));
+      E = round(n_seeds * T_E / (T_E + T_I));
       I = n_seeds - E;
+      F = 0;
+      C = 0;
+      U = 0;
       R = 0;
-      D = 0;
       cases = n_seeds;
     ")
 
@@ -129,9 +135,9 @@
       rprocess = euler(seird_step, delta.t = 1), 
       rinit = seird_init,
       t0 = 1,
-      paramnames = c("N", "R0_I", "R0_D", "incubation_period", 
-        "infectious_period", "burial_period", "cfr", "cov", "eff", "n_seeds"),
-      statenames = c("S", "E", "I", "R", "D", "cases")
+      paramnames = c("N", "R_I", "R_D", "T_E", "T_I", "T_B", "cfr", "cov", 
+        "delta_eff", "n_seeds"),
+      statenames = c("S", "E", "I", "F", "C", "U", "R", "cases")
       # accumvars = "cases" # use this to track daily incidence
     )
 

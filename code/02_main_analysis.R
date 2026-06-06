@@ -22,16 +22,15 @@
     scenarios$highlight <- F
     scenarios[which(
       scenarios$n_seeds == pars["n_seeds"] &
-      scenarios$R0 %in% c(
-        "R0 = 1.1 (0.4 due to burial)", 
-        "R0 = 1.3 (0.6 due to burial)", 
-        "R0 = 1.5 (0.4 due to burial)", 
-        "R0 = 1.7 (0.6 due to burial)", 
-        "R0 = 1.9 (0.8 due to burial)" 
+      scenarios$Rn %in% c(
+        "R = 1.1 (R_D = 0.8)", 
+        "R = 1.3 (R_D = 1.2)", 
+        "R = 1.5 (R_D = 0.8)", 
+        "R = 1.7 (R_D = 1.2)", 
+        "R = 1.9 (R_D = 1.6)" 
       ) &
       scenarios$cov %in% c(0, 0.2, 0.4, 0.6, 0.8, 1.0) & 
-      scenarios$eff %in% c(0.6, 0.8, 1.0)), 
-      "highlight"] <- T
+      scenarios$eff %in% c(0.6, 0.8, 1.0)), "highlight"] <- T
     
     # Subset highlighted scenarios
     table(scenarios$highlight)
@@ -56,14 +55,14 @@
       sim_i <- suppressWarnings(simulate(evd_seird, 
         params = c(
           N = as.integer(pars["pop"]), 
-          R0_I = scenarios_highlight[i, "R0_I"], 
-          R0_D = scenarios_highlight[i, "R0_D"], 
-          incubation_period = as.numeric(pars["incubation_period"]), 
-          infectious_period = as.numeric(pars["infectious_period"]),
-          burial_period = as.numeric(pars["burial_period"]),
+          R_I = scenarios_highlight[i, "R_I"], 
+          R_D = scenarios_highlight[i, "R_D"], 
+          T_E = as.numeric(pars["T_E"]), 
+          T_I = as.numeric(pars["T_I"]),
+          T_B = as.numeric(pars["T_B"]),
           cfr = as.numeric( pars["cfr"]),
           cov = scenarios_highlight[i, "cov"], 
-          eff = effect_sdb[which(
+          delta_eff = effect_sdb[which(
             effect_sdb$eff == scenarios_highlight[i, "eff"]), "mean"],
           n_seeds = as.integer(pars["n_seeds"])),
         nsim = as.integer(length(n_sim)),
@@ -75,7 +74,7 @@
       colnames(sim_i)[colnames(sim_i) == ".id"] <- "n_sim"
       sim_i <- sim_i[order(sim_i$n_sim, sim_i$day), ]
       out[which(out$id == scenarios_highlight[i, "id"]), 
-        c("n_sim", "day", "cases")] <- sim_i[,c("n_sim","day", "cases")]
+        c("n_sim", "day", "cases")] <- sim_i[,c("n_sim", "day", "cases")]
       setTxtProgressBar(pb, i)
     }    
     close(pb)
@@ -85,21 +84,17 @@
         
     # Compute average results 
     out$eff <- factor(percent(out$eff), levels = c("60%", "80%", "100%"))
-    out$R0 <- paste0("R0 = ", out$R0_I + out$R0_D, " (", out$R0_D , 
-      "\ndue to burial)")
     out$cov <- factor(paste0("coverage = ", percent(out$cov)),
       levels =paste0("coverage = ",c("0%", "20%", "40%", "60%", "80%", "100%")))
     # saveRDS(out, paste0(dir_path, "out/sims_main_analysis.rds"))
-    df <- aggregate(cases ~ day + R0 + eff + cov, data = out,
+    df <- aggregate(cases ~ day + Rn + eff + cov, data = out,
       FUN = function(xx) {c(mean(xx), quantile(xx, c(0.5, 0.1, 0.9)))})
-    df <- data.frame(df[, c("day", "R0", "eff", "cov")], unlist(df$cases))
-    colnames(df) <- c("day", "R0", "eff", "cov", 
+    df <- data.frame(df[, c("day", "Rn", "eff", "cov")], unlist(df$cases))
+    colnames(df) <- c("day", "Rn", "eff", "cov", 
       "mean", "median", "quant10", "quant90")
     df <- subset(df, day == max(df$day))
-    df$R0_fr <- df$R0
-    df$R0_fr <- gsub("\ndue to burial", " attribuable \naux enterrements",
-      df$R0_fr)
-    df$R0_fr <- gsub("\\.", ",", df$R0_fr)
+    df$Rn_fr <- df$Rn
+    df$Rn_fr <- gsub("\\.", ",", df$Rn_fr)
     df$cov_fr <- gsub("coverage", "couverture", df$cov)
     df$cov_fr <- factor(df$cov_fr,
       levels = paste0("couverture = ",
@@ -118,7 +113,7 @@
         values = palette_gen[c(1,9,15)]) +
       scale_fill_manual("SDB effectiveness (%)",
         values = palette_gen[c(1,9,15)]) +
-      facet_grid(R0 ~ cov) +
+      facet_grid(Rn ~ cov) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
     ggsave(paste0(dir_path, "out/main_analysis_cum_cases_en.png"),
@@ -135,7 +130,7 @@
         values = palette_gen[c(1,9,15)]) +
       scale_fill_manual("complétude de l'EDS (%)",
         values = palette_gen[c(1,9,15)]) +
-      facet_grid(R0_fr ~ cov_fr) +
+      facet_grid(Rn_fr ~ cov_fr) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
     ggsave(paste0(dir_path, "out/main_analysis_cum_cases_fr.png"),
@@ -148,13 +143,11 @@
         
     # Compute extinction probability
     df <- subset(out, day %in% c(max(out$day), max(out$day) - 21))
-    df <- aggregate(cases ~ n_sim + R0 + eff + cov, data = df, FUN = diff)
+    df <- aggregate(cases ~ n_sim + Rn + eff + cov, data = df, FUN = diff)
     df$p_extinction <- ifelse(df$cases == 0, T, F)
-    df <- aggregate(p_extinction ~ R0 + eff + cov, data = df, FUN = mean)
-    df$R0_fr <- df$R0
-    df$R0_fr <- gsub("\ndue to burial", " attribuable \naux enterrements",
-      df$R0_fr)
-    df$R0_fr <- gsub("\\.", ",", df$R0_fr)
+    df <- aggregate(p_extinction ~ Rn + eff + cov, data = df, FUN = mean)
+    df$Rn_fr <- df$Rn
+    df$Rn_fr <- gsub("\\.", ",", df$Rn_fr)
     df$cov_fr <- gsub("coverage", "couverture", df$cov)
     df$cov_fr <- factor(df$cov_fr,
       levels = paste0("couverture = ",
@@ -173,7 +166,7 @@
         values = palette_gen[c(1,9,15)]) +
       scale_fill_manual("SDB effectiveness (%)",
         values = palette_gen[c(1,9,15)]) +
-      facet_grid(R0 ~ cov) +
+      facet_grid(Rn ~ cov) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
     ggsave(paste0(dir_path, "out/main_analysis_p_extinction_en.png"),
@@ -190,7 +183,7 @@
         values = palette_gen[c(1,9,15)]) +
       scale_fill_manual("complétude de l'EDS (%)",
         values = palette_gen[c(1,9,15)]) +
-      facet_grid(R0_fr ~ cov_fr) +
+      facet_grid(Rn_fr ~ cov_fr) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
     ggsave(paste0(dir_path, "out/main_analysis_p_extinction_fr.png"),

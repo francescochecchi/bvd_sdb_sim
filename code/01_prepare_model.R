@@ -18,17 +18,17 @@
   ## Read in simulation parameters
 
     # Read parameter file and create parameter vector
-    pars_df <- read_xlsx(paste0(dir_path, "in/evd_sdb_sim_parameters.xlsx"))
+    pars_df <- read_xlsx(here(dir_path, "in", "evd_sdb_sim_parameters.xlsx"))
     pars <- pars_df$value
     names(pars) <- pars_df$parameter
     
     # Effect of safe and dignified burial (SDB) on reproduction number, based on
-      # two methods (Hirano-Imbens [hi], Propensity Weights [pw]) 
+      # two methods (Hirano-Imbens [hi], Propensity Weights [pw])
       # in Checchi et al. (2025)
-    effect_hi <- read.csv(paste0(
-      dir_path, "in/out_dose_resp_rn_p_success_hi.csv"))
-    effect_pw <- read.csv(paste0(
-      dir_path, "in/out_dose_resp_rn_p_success_pw.csv"))
+    effect_hi <- read.csv(here(dir_path,
+      "in", "out_dose_resp_rn_p_success_hi.csv"))
+    effect_pw <- read.csv(here(dir_path,
+      "in", "out_dose_resp_rn_p_success_pw.csv"))
     effect_sdb <- (effect_hi + effect_pw) / 2 # simple average of two methods
     x <- c("mean", "low", "high")
     colnames(effect_sdb) <- c("prop_success", x)
@@ -49,7 +49,7 @@
       scale_x_continuous("SDB effectiveness", labels = percent, 
         expand = expansion(add = c(0, 0.02))) +
       scale_y_continuous("reduction in the reproduction number")
-    ggsave(paste0(dir_path, "out/sdb_effect_en.png"), dpi = "print",
+    ggsave(here(dir_path, "out", "sdb_effect_en.png"), dpi = "print",
       units = "cm", height = 10, width = 15 * hw)  
 
     # Plot effect in French
@@ -63,7 +63,7 @@
       scale_x_continuous("complétude de l'EDS (%)", labels = percent, 
         expand = expansion(add = c(0, 0.02))) +
       scale_y_continuous("réduction du nombre de reproduction")
-    ggsave(paste0(dir_path, "out/sdb_effect_fr.png"), dpi = "print",
+    ggsave(here(dir_path, "out", "sdb_effect_fr.png"), dpi = "print",
       units = "cm", height = 10, width = 15 * hw)  
         
   #...................................       

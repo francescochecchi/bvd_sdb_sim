@@ -99,7 +99,7 @@
     df$cov_fr <- factor(df$cov_fr,
       levels = paste0("couverture = ",
         c("0%", "20%", "40%", "60%", "80%", "100%")))    
-    write.csv(df, paste0(dir_path, "out/main_analysis_cum_cases.csv"),
+    write.csv(df, here(dir_path, "out", "main_analysis_cum_cases.csv"),
       row.names = F)
     
     # Visualise in English
@@ -116,7 +116,7 @@
       facet_grid(Rn ~ cov) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
-    ggsave(paste0(dir_path, "out/main_analysis_cum_cases_en.png"),
+    ggsave(here(dir_path, "out", "main_analysis_cum_cases_en.png"),
       units = "cm", dpi = "print", height = 20, width = 25 * hw)
 
     # Visualise in French
@@ -133,7 +133,7 @@
       facet_grid(Rn_fr ~ cov_fr) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
-    ggsave(paste0(dir_path, "out/main_analysis_cum_cases_fr.png"),
+    ggsave(here(dir_path, "out", "main_analysis_cum_cases_fr.png"),
       units = "cm", dpi = "print", height = 20, width = 25 * hw)
 
     
@@ -152,7 +152,7 @@
     df$cov_fr <- factor(df$cov_fr,
       levels = paste0("couverture = ",
         c("0%", "20%", "40%", "60%", "80%", "100%")))    
-    write.csv(df, paste0(dir_path, "out/main_analysis_p_extinction.csv"),
+    write.csv(df, here(dir_path, "out", "main_analysis_p_extinction.csv"),
       row.names = F)
 
     # Visualise in English
@@ -169,7 +169,7 @@
       facet_grid(Rn ~ cov) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
-    ggsave(paste0(dir_path, "out/main_analysis_p_extinction_en.png"),
+    ggsave(here(dir_path, "out", "main_analysis_p_extinction_en.png"),
       units = "cm", dpi = "print", height = 20, width = 25 * hw)
 
     # Visualise in French
@@ -186,7 +186,7 @@
       facet_grid(Rn_fr ~ cov_fr) +
       theme_bw()+
       theme(legend.position = "none", panel.grid.major.x = element_blank())
-    ggsave(paste0(dir_path, "out/main_analysis_p_extinction_fr.png"),
+    ggsave(here(dir_path, "out", "main_analysis_p_extinction_fr.png"),
       units = "cm", dpi = "print", height = 20, width = 25 * hw)
     
 
